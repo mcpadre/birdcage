@@ -23,6 +23,7 @@ mod seccomp;
 #[derive(Default)]
 pub struct LinuxSandbox {
     env_exceptions: Vec<String>,
+    custom_env: Option<HashMap<String, String>>,
     path_exceptions: PathExceptions,
     allow_networking: bool,
     full_env: bool,
@@ -40,6 +41,7 @@ impl Sandbox for LinuxSandbox {
             Exception::ExecuteAndRead(path) => self.path_exceptions.update(path, false, true)?,
             Exception::Environment(key) => self.env_exceptions.push(key),
             Exception::FullEnvironment => self.full_env = true,
+            Exception::CustomEnvironment(env_map) => self.custom_env = Some(env_map),
             Exception::Networking => self.allow_networking = true,
         }
 
@@ -53,8 +55,10 @@ impl Sandbox for LinuxSandbox {
             "`Sandbox::spawn` must be called from a single-threaded process"
         );
 
-        // Remove environment variables.
-        if !self.full_env {
+        // Remove/replace environment variables.
+        if let Some(ref custom_env) = self.custom_env {
+            crate::restrict_env_variables_with_custom(&[], Some(custom_env));
+        } else if !self.full_env {
             crate::restrict_env_variables(&self.env_exceptions);
         }
 

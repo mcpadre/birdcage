@@ -34,6 +34,7 @@ static DEFAULT_RULE: &[u8] = b"\
 pub struct MacSandbox {
     path_exceptions: HashMap<String, PathException>,
     env_exceptions: Vec<String>,
+    custom_env: Option<HashMap<String, String>>,
     net_exception: bool,
     full_env: bool,
 }
@@ -61,13 +62,19 @@ impl Sandbox for MacSandbox {
                 self.full_env = true;
                 return Ok(self);
             },
+            Exception::CustomEnvironment(env_map) => {
+                self.custom_env = Some(env_map);
+                return Ok(self);
+            },
         }
         Ok(self)
     }
 
     fn spawn(self, mut sandboxee: Command) -> Result<Child> {
-        // Remove environment variables.
-        if !self.full_env {
+        // Remove/replace environment variables.
+        if let Some(ref custom_env) = self.custom_env {
+            crate::restrict_env_variables_with_custom(&[], Some(custom_env));
+        } else if !self.full_env {
             crate::restrict_env_variables(&self.env_exceptions);
         }
 

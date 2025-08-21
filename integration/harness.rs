@@ -7,6 +7,7 @@ test_mods! {
     mod canonicalize;
     #[cfg(target_os = "linux")]
     mod consistent_id_mappings;
+    mod custom_env;
     mod delete_before_lockdown;
     mod env;
     mod exec;

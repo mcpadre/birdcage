@@ -56,6 +56,33 @@ $ cargo run --example sandbox -- -e /usr/bin/echo -e /usr/lib echo "Hello, Sandb
 Hello, Sandbox!
 ```
 
+### Basic usage
+
+```rust
+use std::collections::HashMap;
+use birdcage::{Birdcage, Exception, Sandbox};
+use birdcage::process::Command;
+
+// Create a new sandbox
+let mut sandbox = Birdcage::new();
+
+// Allow access to read a file
+sandbox.add_exception(Exception::Read("/etc/hosts".into()))?;
+
+// Allow networking
+sandbox.add_exception(Exception::Networking)?;
+
+// Set custom environment variables (replaces all existing environment)
+let mut custom_env = HashMap::new();
+custom_env.insert("PATH".to_string(), "/usr/bin:/bin".to_string());
+custom_env.insert("HOME".to_string(), "/tmp".to_string());
+sandbox.add_exception(Exception::CustomEnvironment(custom_env))?;
+
+// Spawn a sandboxed process
+let mut command = Command::new("/usr/bin/whoami");
+let child = sandbox.spawn(command)?;
+```
+
 Check out `cargo run --example sandbox -- --help` for more information on how to
 use the example.
 
